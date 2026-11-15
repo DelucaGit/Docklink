@@ -1,0 +1,1 @@
+I set up the Java backend by using a standard generator from the internet. I used Java 25, Spring Boot 4, and I use the Maven wrapper, so it's not a real Maven, but it's a wrapper. That's good because it makes this app runnable for everyone, so you don't have to install Maven on your computer, but you can just run this on any computer.I closed issue 6 on GitHub.
