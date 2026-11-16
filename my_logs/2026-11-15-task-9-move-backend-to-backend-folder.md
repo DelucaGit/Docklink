@@ -1,0 +1,1 @@
+I accidentally created the backend files inside the root folder in the repository, so I just moved everything into a backend folder. The structure of this project is to have a monorepo with a folder for backend, a folder for frontend, and a folder for E2E (which means end-to-end tests). This was just a correction.
