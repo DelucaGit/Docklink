@@ -1,22 +1,92 @@
-Before any actual class is written we need to have a test class first. In that order we don't make any real API calls that can be charged or damage the server content. The REST client is what allows the class to make HTTP calls and the sequence or the structure is simple:
+---
+restructured: 2026-11-17
+tags: [spring, testing, rest, http]
+aliases: [RestClient, MockRestServiceServer, fake HTTP server, mock server]
+---
 
-1. `RESTClient.builder`
-2. Make sure the builder is created.
-3. You append the base URL to it. Basically it's saying that all API calls will be made to this base URL and every other path that you append to it will be appended to that base URL.
-4. The mock REST service server is a fake server. It's a fake HTTP server. You append `bindTo` to it and then append it to the previous REST client builder that you built previously.
+# RestClient and MockRestServiceServer
 
-That means that every HTTP call made from that builder, from that REST client, will be sent straight to this mock server. After you append it to that builder you build it yourself. It's important to have the `build` function after the binding. Otherwise every HTTP call made from that REST client will be sent to the real internet.
+> [!summary] In one sentence
+> **`RestClient`** is what lets a class make HTTP calls. **`MockRestServiceServer`** is a fake HTTP server you plug into it in tests, so no request ever reaches the real internet.
 
-When testing you first make the REST client. As said previously you give it a base URL. Apparently this base URL is only for the REST client.
+## Why test first
 
-When you later on build the fake server (the mock server) and you tell it to expect a request to a certain URL, you need to write the whole URL. You cannot just add the path, thinking that it will connect it with the base URL you wrote previously, because the base URL you wrote previously is only connected to the REST client. It's not connected to the mock server. 
+The test is written before the real class. That way no real API calls are made while you build, so nothing is charged and nothing on the real server can be damaged.
 
-When preparing the test you start by telling the fake or the mock server what to expect. You tell it that it will expect a request to a specific URL and this URL has to be complete. You do not think that it will be connected or appended to the base URL you wrote for the rest client because the base URL you wrote for the rest client is only specific to the rest client. The mock server does not get that information.
+> [!warning] Correction (added by Claude)
+> Writing the test first is **our workflow's choice** for hard areas like external services (WORKFLOW.md rule 14). It is not something `RestClient` requires. The real reason the mock server protects you is that requests go to it instead of the internet, whether the test was written first or not.
 
-You have to tell it that it will expect a request to this specific URL and then you write it in full. You can append to that line of code another expectation and tell it to expect the method to be an HTTP method of type POST so it's a POST request. To that you can append what type of response it will get, meaning that if the server gets a request to this URL and the request method is POST type, then respond with whatever you want. You can respond with a success and that will return an HTTP status of 200.
+## The two parts
 
-Inside that response you can write, in string format, a full JSON object with the keys and values. Inside that response you also write what type of media it is, meaning what's the type of response. You said `media type: application/json`. That way the code understands, or Java will understand, that this response is JSON type. This is important because we will use Jackson later on to convert the JSON into Java objects. 
+| | **`RestClient`** | **`MockRestServiceServer`** |
+|---|---|---|
+| What it is | The HTTP client your class uses | A fake HTTP server, only for tests |
+| Built from | `RestClient.builder()` | `MockRestServiceServer.bindTo(builder)` |
+| Knows the base URL? | Yes, `.baseUrl(...)` | **No** |
 
-After you're done building the expectations (meaning that you're done working with what the actual fake server should expect), you start building the new client. This is because previously, on line 17, you only wrote the builder. You didn't do the actual rest client. You only made the builder for the client.
+## The order, step by step
 
-After you did the mocking server, you told it what to expect. After that you actually build the real client or the fake client in this case. Inside it, inside the paragraphs, you feed it with the builder and also with the client ID. 
+```mermaid
+flowchart TB
+    A["1. RestClient.builder().baseUrl(...)"] --> B["2. MockRestServiceServer.bindTo(builder).build()"]
+    B --> C["3. fakeGithub.expect(...) — what to expect, what to answer"]
+    C --> D["4. builder.build() → new DeviceFlowClient(restClient, clientId)"]
+    D --> E["5. Act: client.startLogin()"]
+    E --> F["6. Assert + fakeGithub.verify()"]
+```
+
+### 1. Create the builder with a base URL
+```java
+RestClient.Builder builder = RestClient.builder().baseUrl("https://github.test");
+```
+This is only a **builder**, not the client yet. The base URL says that every call goes to `https://github.test`, and each path (like `/login/device/code`) is appended to it.
+
+### 2. Bind the fake server to the builder
+```java
+MockRestServiceServer fakeGithub = MockRestServiceServer.bindTo(builder).build();
+```
+From now on, every HTTP call from a `RestClient` built from this builder goes straight to the fake server.
+
+> [!important] Build the client *after* binding
+> The client must be built (`builder.build()`) **after** `bindTo`. A client built before the binding sends its calls to the real internet.
+
+### 3. Tell the fake server what to expect and what to answer
+```java
+fakeGithub.expect(requestTo("https://github.test/login/device/code"))
+        .andExpect(method(HttpMethod.POST))
+        .andRespond(withSuccess("""
+                {"device_code":"secret-device-code", "user_code":"ABCD-1234", ...}
+                """, MediaType.APPLICATION_JSON));
+```
+- `requestTo(...)`: the **full** URL it should receive.
+- `andExpect(method(HttpMethod.POST))`: it should be a POST request.
+- `andRespond(withSuccess(...))`: answer with HTTP status **200**, with a JSON object written as a string.
+- `MediaType.APPLICATION_JSON`: tells Java the answer is JSON. That matters because **Jackson** then converts the JSON into Java objects (here a `DeviceCodeResponse`).
+
+> [!warning] Write the full URL in `requestTo`
+> The base URL belongs **only** to the `RestClient`. The fake server never gets it. So you can't write just the path in `requestTo` and expect it to be joined with the base URL. Write the whole URL.
+
+### 4. Build the client and hand it to your class
+```java
+DeviceFlowClient client = new DeviceFlowClient(builder.build(), "test-client-id");
+```
+Now the builder becomes a real `RestClient`. It's passed **inside the parentheses** (the constructor's arguments), together with a fake client ID.
+
+> [!note] Real class, fake server
+> `DeviceFlowClient` is the **real** class, the same one the app uses. Only the server it talks to is fake. That's possible because the class gets its `RestClient` from the outside: [[Dependency Injection]].
+
+### 5–6. Run it and check
+```java
+DeviceCodeResponse response = client.startLogin();   // Act
+assertEquals("ABCD-1234", response.userCode());      // Assert
+fakeGithub.verify();
+```
+`verify()` checks that the fake server **actually received** every request it was told to expect. Without it, the test could pass even if no request was ever sent.
+
+> [!tip] Memory trick
+> **Bind, expect, build.** Bind the fake server to the builder, tell it what to expect, and only then build the client.
+
+## Related
+- [[Dependency Injection]]
+- [[URI and URL]]
+- [[Synchronous and asynchronous REST clients]]

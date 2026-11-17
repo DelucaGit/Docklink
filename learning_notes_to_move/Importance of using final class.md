@@ -45,8 +45,18 @@ public final class TokenValidator {
 }
 ```
 
+> [!warning] Correction (added by Claude)
+> Step 3 is the weak point of the attack. If someone can already make your application load and use *their* class, they can run any code they want, so `final` alone does not stop them. What `final` really protects against:
+> - **Mistakes inside your own code base**: nobody (you included) can subclass the class and accidentally change how it works.
+> - **Breaking a guarantee**: if the class promises something (for example "a token is always checked"), a subclass can't quietly break that promise. This is why Java's `String` is `final`.
+>
+> So think of `final` as protecting **the design**, not as a lock against attackers.
+
+> [!tip] In Docklink
+> Java **records** (like `DeviceCodeResponse` and `AccessTokenResponse`) are automatically `final`. You don't have to write it.
+
 > [!tip] Memory trick
 > `final` class = a sealed box. Nobody can open it up and swap the contents by extending it.
 
 ## Related
-- (no closely related notes in this folder yet)
+- [[Dependency Injection]]

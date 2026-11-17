@@ -5,15 +5,33 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 
+/**
+ * Logs a user in to GitHub with the OAuth device flow.
+ *
+ * <p>The {@link RestClient} is passed in from outside, so the GitHub base URL
+ * is decided by whoever creates this class (configuration in the app, a fake
+ * server in tests).
+ */
 public class DeviceFlowClient {
     private final RestClient restClient;
     private final String clientId;
 
+    /**
+     * @param restClient client with the GitHub base URL already set
+     * @param clientId   the Client ID of Docklink's OAuth app on GitHub
+     */
     public DeviceFlowClient(RestClient restClient, String clientId) {
         this.restClient = restClient;
         this.clientId = clientId;
     }
 
+    /**
+     * Starts a login by asking GitHub for a device code and a user code.
+     *
+     * @return the codes from GitHub; show {@code userCode} and
+     *         {@code verificationUri} to the user, keep {@code deviceCode}
+     *         for polling
+     */
     public DeviceCodeResponse startLogin() {
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
         form.add("client_id", clientId);
