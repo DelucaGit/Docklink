@@ -58,5 +58,39 @@ public final class TokenValidator {
 > [!tip] Memory trick
 > `final` class = a sealed box. Nobody can open it up and swap the contents by extending it.
 
+## `final` on a field (added by Claude, 2026-11-17)
+
+`final` means something different depending on where you put it:
+
+| Put on | Means |
+|---|---|
+| A **class** | Nobody can inherit from it |
+| A **field** | It gets its value once, in the constructor, and can never be changed after that |
+
+```java
+public class DeviceFlowClient {
+    private final RestClient restClient;
+
+    public DeviceFlowClient(RestClient restClient, String clientId) {
+        this.restClient = restClient;   // ✅ set once, in the constructor
+    }
+
+    void something() {
+        this.restClient = null;         // ❌ compile error
+    }
+}
+```
+
+Java checks two things for a `final` field, and won't compile otherwise:
+1. It **must** be set in the constructor, so it can't be forgotten and left `null`.
+2. It **can't** be changed later by any method.
+
+> [!note] It locks the field, not the object
+> `final` locks **which object** the field points to. You can still call methods on that object: `restClient.post()` is fine, `restClient = other` is not.
+
+> [!tip] In Docklink
+> Fields that come in through the constructor (dependency injection) are almost always `private final` in Spring code. `DeviceFlowClient` should use the same `RestClient` and Client ID for its whole life.
+
 ## Related
 - [[Dependency Injection]]
+- [[Configuration and Beans]]

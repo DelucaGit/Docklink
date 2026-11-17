@@ -78,3 +78,4 @@ In a Spring app, the **Spring container** works out what each class needs and ha
 ## Related
 - [[RestClient and MockRestServiceServer]]
 - [[Importance of using final class]]
+- [[Configuration and Beans]]
