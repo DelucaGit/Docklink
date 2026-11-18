@@ -13,7 +13,8 @@ import org.springframework.web.client.RestClient;
 public class GithubConfig {
 
     @Bean
-    public DeviceFlowClient deviceFlowClient(@Value("${github.client-id}") String clientId,
+    public DeviceFlowClient deviceFlowClient(
+            @Value("${github.client-id}") String clientId,
             @Value("${github.base-url}") String baseUrl) {
 
         RestClient restClient = RestClient.builder().baseUrl(baseUrl).build();
@@ -21,3 +22,4 @@ public class GithubConfig {
         return new DeviceFlowClient(restClient, clientId);
     }
 }
+

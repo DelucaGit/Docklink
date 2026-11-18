@@ -13,8 +13,8 @@ import org.springframework.web.client.RestClient;
  * server in tests).
  */
 public class DeviceFlowClient {
-    private final RestClient restClient;
-    private final String clientId;
+    private final RestClient restClient; // These two are empty holders
+    private final String clientId; // They get set in the constructor
 
     /**
      * @param restClient client with the GitHub base URL already set
@@ -24,6 +24,8 @@ public class DeviceFlowClient {
         this.restClient = restClient;
         this.clientId = clientId;
     }
+
+
 
     /**
      * Starts a login by asking GitHub for a device code and a user code.
