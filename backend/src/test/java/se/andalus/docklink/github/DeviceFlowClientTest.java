@@ -49,17 +49,18 @@ class DeviceFlowClientTest {
         MockRestServiceServer fakeGithub = MockRestServiceServer.bindTo(builder).build();
 
         fakeGithub.expect(requestTo("https://github.test/login/oauth/access_token")).andExpect(method(HttpMethod.POST))
-                .andRespond(withSuccess("""                                                                                                                       
-          {"access_token":"test-token",                                                                                                             
-          "token_type":"bearer",                                                                                                                    
-          "scope":"repo"                                                                                                                            
-          }                                                                                                                                         
-          """, MediaType.APPLICATION_JSON));
+                .andRespond(withSuccess("""
+          {
+          "access_token":"test-token",
+          "token_type":"bearer",                                                                                                                   \s
+          "scope":"repo"                                                                                                                           \s
+          }                                                                                                                                        \s
+         \s""", MediaType.APPLICATION_JSON));
 
         DeviceFlowClient client = new DeviceFlowClient(builder.build(), "test-client-id");
 
         // Act
-        AccessTokenResponse response = client.pollForToken("test-device-code");
+        AccessTokenResponse response = client.pollForAccessToken("test-device-code");
 
         // Assert
         assertEquals("test-token", response.accessToken());

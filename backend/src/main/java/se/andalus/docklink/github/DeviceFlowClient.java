@@ -38,7 +38,25 @@ public class DeviceFlowClient {
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
         form.add("client_id", clientId);
 
-        return restClient.post().uri("/login/device/code").contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .accept(MediaType.APPLICATION_JSON).body(form).retrieve().body(DeviceCodeResponse.class);
+        return restClient.post().
+                uri("/login/device/code").
+                contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .accept(MediaType.APPLICATION_JSON).
+                body(form).retrieve().
+                body(DeviceCodeResponse.class);
+    }
+
+    public AccessTokenResponse pollForAccessToken(String deviceCode) {
+        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+        form.add("device_code", deviceCode);
+        form.add("client_id", clientId);
+        form.add("grant_type", "urn:ietf:params:oauth:grant-type:device_code");
+
+        return restClient.post().
+                uri("/login/oauth/access_token").
+                contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .accept(MediaType.APPLICATION_JSON).
+                body(form).retrieve().
+                body(AccessTokenResponse.class);
     }
 }
