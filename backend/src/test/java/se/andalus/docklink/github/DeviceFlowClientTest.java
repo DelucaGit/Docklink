@@ -41,4 +41,30 @@ class DeviceFlowClientTest {
 
         fakeGithub.verify();
     }
+
+
+    @Test
+    void pollGithubUntilItVerifiesLogin(){
+        RestClient.Builder builder = RestClient.builder().baseUrl("https://github.test");
+        MockRestServiceServer fakeGithub = MockRestServiceServer.bindTo(builder).build();
+
+        fakeGithub.expect(requestTo("https://github.test/login/oauth/access_token")).andExpect(method(HttpMethod.POST))
+                .andRespond(withSuccess("""                                                                                                                       
+          {"access_token":"test-token",                                                                                                             
+          "token_type":"bearer",                                                                                                                    
+          "scope":"repo"                                                                                                                            
+          }                                                                                                                                         
+          """, MediaType.APPLICATION_JSON));
+
+        DeviceFlowClient client = new DeviceFlowClient(builder.build(), "test-client-id");
+
+        // Act
+        AccessTokenResponse response = client.pollForToken("test-device-code");
+
+        // Assert
+        assertEquals("test-token", response.accessToken());
+
+        fakeGithub.verify();
+    }
+
 }

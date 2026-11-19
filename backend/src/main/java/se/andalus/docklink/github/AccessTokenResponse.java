@@ -19,9 +19,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public record AccessTokenResponse(
     @JsonProperty("access_token")
     String accessToken,
+    String scope,
     @JsonProperty("token_type")
     String tokenType,
-    String scope,
     String error,
     @JsonProperty("error_description")
     String errorDescription,
